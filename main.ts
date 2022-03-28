@@ -82,7 +82,7 @@ class RoomGrid {
         let pos = startPos
         let lastDir = fromDir
         let dir = 0
-        this.placeTile(pos[0], pos[1], "L")
+        this.placeTile(pos[0], pos[1], "0")
         for (let moves = 0; moves < maxMoves; moves++) {
             dir = getNewDir(getDir(lastDir+2))
             const moveDir = DIRECTION[dir]
@@ -95,25 +95,25 @@ class RoomGrid {
                 pos = nextPos
                 lastDir = dir
             }
-            this.placeTile(pos[0], pos[1], "L")
+            this.placeTile(pos[0], pos[1], "0")
         }
         while (pos[0] != endPos[0]) {
             pos[0] < endPos[0] ? pos[0]++ : pos[0]--
-            this.placeTile(pos[0], pos[1], "L")
+            this.placeTile(pos[0], pos[1], "0")
         }
         while (pos[1] != endPos[1]) {
             pos[1] < endPos[1] ? pos[1]++ : pos[1]--
-            this.placeTile(pos[0], pos[1], "L")
+            this.placeTile(pos[0], pos[1], "0")
         }
     }
     getGridString(): String {
         let retStr = ""
-        this.grid.forEach(element => {
-            element.forEach(tile => {
-                retStr += tile
-            });
+        for (let y = 0; y<this.sy; y++) {
+            for (let x = 0; x<this.sx; x++) {
+                retStr += this.getTile(x, y)
+            }
             retStr += "\n"
-        });
+        }
         return retStr.substring(0, retStr.length-1)
     }
     getMirrorGrid(): RoomGrid {
@@ -152,6 +152,8 @@ function setHorizontalConnections(room: RoomConnection, leftRoom?: RoomConnectio
 function setVerticalConnections(room: RoomConnection, topRoom?: RoomConnection, bottomRoom?: RoomConnection) {
     if (topRoom !== undefined) {
         room.top = topRoom.bottom !== undefined ? topRoom.bottom : randInt(1, 4)
+    } else {
+        room.top = randInt(1, 4)
     }
     if (bottomRoom !== undefined) {
         room.bottom = bottomRoom.top !== undefined ? bottomRoom.top : randInt(1, 4)
@@ -164,7 +166,7 @@ function getRoomConnection(x: number, y: number): RoomConnection | undefined {
     return roomConnections[y] !== undefined ? roomConnections[y][x] : undefined
 }
 
-function setAllRoomConnections(x: number, y: number): void {
+function setAllRoomConnections(x: number, y: number): RoomConnection {
     roomConnections[y][x] = {}
     let roomConnection = roomConnections[y][x]
     let leftRoom = getRoomConnection(x-1, y)
@@ -173,6 +175,16 @@ function setAllRoomConnections(x: number, y: number): void {
     let bottomRoom = getRoomConnection(x, y+1)
     setHorizontalConnections(roomConnection, leftRoom, rightRoom)
     setVerticalConnections(roomConnection, topRoom, bottomRoom)
+    return roomConnection
+}
+
+function setHorizontalConnectionsPos(x: number, y: number): RoomConnection {
+    roomConnections[y][x] = {}
+    let roomConnection = roomConnections[y][x]
+    let leftRoom = getRoomConnection(x-1, y)
+    let rightRoom = getRoomConnection(x+1, y)
+    setHorizontalConnections(roomConnection, leftRoom, rightRoom)
+    return roomConnection
 }
 
 function setPathDropConnection(x: number, y: number): void {
@@ -213,11 +225,7 @@ set_callback((ctx: PostRoomGenerationContext) => {
             let roomTemplate = get_room_template(x, y, LAYER.FRONT)
             if (roomTemplate !== undefined && !roomConnections[y][x]) {
                 if (roomTemplate == ROOM_TEMPLATE.PATH_NORMAL) {
-                    roomConnections[y][x] = {}
-                    let roomConnection = roomConnections[y][x]
-                    let leftRoom = getRoomConnection(x-1, y)
-                    let rightRoom = getRoomConnection(x+1, y)
-                    setHorizontalConnections(roomConnection, leftRoom, rightRoom)
+                    setHorizontalConnectionsPos(x, y)
                 } else if (roomTemplate == ROOM_TEMPLATE.PATH_DROP) {
                     setPathDropConnection(x, y)
                 } else if (roomTemplate == ROOM_TEMPLATE.PATH_NOTOP) {
@@ -251,33 +259,12 @@ set_callback((ctx: PostRoomGenerationContext) => {
                     messpect("tall", x, y)
                 } else if (roomTemplate == ROOM_TEMPLATE.MACHINE_BIGROOM_PATH) {
                     //TODO: Make rooms at right top and right bottom to have correct connections (if they don't have it correct already)
-                    setAllRoomConnections(x, y)
-                    setAllRoomConnections(x+1, y)
-                    setAllRoomConnections(x, y+1)
-                    setAllRoomConnections(x+1, y+1)
-                    /*
-                    roomConnections[y][x] = {}
-                    let roomConnection = roomConnections[y][x]
-                    let leftRoom = getRoomConnection(x-1, y)
-                    let topRoom = getRoomConnection(x, y-1)
-                    setHorizontalConnections(roomConnection, leftRoom, undefined)
-                    setVerticalConnections(roomConnection, topRoom, undefined)
-
-                    roomConnections[y][x+1] = {}
-                    let roomConnectionRight = roomConnections[y][x+1]
-                    let rightRoom = getRoomConnection(x+2, y)
-                    setHorizontalConnections(roomConnectionRight, roomConnection, rightRoom)
-                    setVerticalConnections(roomConnection, topRoom, undefined)
-
-                    roomConnections[y+1][x] = {}
-                    let roomConnectionBottom = roomConnections[y+1][x]
-                    let leftBottomRoom = getRoomConnection(x-1, y+1)
-                    setHorizontalConnections(roomConnectionBottom, leftBottomRoom, undefined)
-
-                    roomConnections[y+1][x+1] = {}
-                    let roomConnectionBottomRight = roomConnections[y+1][x+1]
-                    let rightBottomRoom = getRoomConnection(x+2, y+1)
-                    setHorizontalConnections(roomConnectionBottomRight, roomConnectionBottom, rightBottomRoom)*/
+                    let leftTopRoom = setAllRoomConnections(x, y)
+                    let leftBottomRoom = setAllRoomConnections(x, y+1)
+                    let rightTopRoom = setHorizontalConnectionsPos(x+1, y)
+                    let rightBottomRoom = setHorizontalConnectionsPos(x+1, y+1)
+                    rightTopRoom.top = 9 - (leftTopRoom.top as number)
+                    rightBottomRoom.bottom = 9 - (leftBottomRoom.bottom as number)
                 }
             }
         }
@@ -385,13 +372,13 @@ function getRoomSymmetric(pos: [number, number], roomTemplate: number, floorChan
         messpect("wideroom", roomStr)
     } else if (roomTemplate == ROOM_TEMPLATE.SIDE) {
         room = new RoomGrid(5, 8)
-        room.setRandomGrid(floorChance/2)
+        room.setRandomGrid(floorChance)
         roomStr = room.getMirrorGrid().getGridString()
     } else if (roomTemplate == ROOM_TEMPLATE.MACHINE_BIGROOM_PATH) {
         room = new RoomGrid(10, 16)
         room.setRandomGrid(floorChance)
         const [leftTop, topLeft, , ] = getRoomConectionSides(x, y, 5, 0, 5, 0)
-        const [leftBottom, , , bottomLeft] = getRoomConectionSides(x, y, 5, 0, 5, 0)
+        const [leftBottom, , , bottomLeft] = getRoomConectionSides(x, y+1, 5, 0, 5, 0)
         room.setRandomPath([0,leftTop], [9,randInt(0,7)], DIR.LEFT)
         room.setRandomPath([0,leftBottom+8], [9,randInt(8,15)], DIR.LEFT)
         room.setRandomPath([topLeft,0], [bottomLeft,15], DIR.LEFT, randInt(10, 25))
@@ -417,7 +404,7 @@ function shouldNotBeReplaced(x: number, y: number, l: number, room_template: num
 
 set_callback((x: number, y:number, l: number, room_template: ROOM_TEMPLATE) => {
     if (shouldNotBeReplaced(x, y, l, room_template)) return
-    let roomStr = getRoomSymmetric([x, y], room_template, 100)
+    let roomStr = getRoomSymmetric([x, y], room_template, state.theme == THEME.COSMIC_OCEAN ? 30 : 50)
     num++
     if (num > 100) {
         messpect(x, y, l, room_template)
