@@ -1,4 +1,4 @@
-import { RoomConnection } from "./RoomConnection"
+import { RoomConnection } from "./roomConnection"
 export class RoomConnections {
     rooms: RoomConnection[][]
     constructor(height?: number) {

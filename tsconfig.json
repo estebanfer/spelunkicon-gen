@@ -8,7 +8,7 @@
   },
   "tstl": {
     "luaTarget": "5.3",
-    "luaBundleEntry": "./main.ts",
+    "luaBundleEntry": "./src/main.ts",
     "luaBundle": "main.lua"
   }
 }

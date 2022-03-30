@@ -1,4 +1,4 @@
-import {randInt} from "./Common"
+import {randInt} from "../common"
 
 export class RoomConnection {
     left?: number

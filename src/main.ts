@@ -1,6 +1,6 @@
 //TODO: theme specific tiles, fix ice caves
-import {randInt} from "./Common"
-import { RoomConnections } from "./RoomConnections"
+import {randInt} from "./common"
+import { RoomConnections } from "./roomConnection/roomConnections"
 
 type ExtraConditionCallback = (tx: number, ty: number, tiles: number[][]) => any
 
