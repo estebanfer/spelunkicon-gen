@@ -1,5 +1,5 @@
 //TODO: theme specific tiles, fix ice caves
-import {randInt} from "./common"
+import { randInt, numOrDefault } from "./common"
 import { RoomConnections } from "./roomConnection/roomConnections"
 
 type ExtraConditionCallback = (tx: number, ty: number, tiles: number[][]) => any
@@ -228,10 +228,10 @@ function getRoom(roomTemplate: number, floorChance: number): String {
 function getRoomConectionSides(x: number, y: number, left: number, top: number, right: number, bottom: number): LuaMultiReturn<[number, number, number, number]> {
     const roomConnection = roomConnections.getRoomConnection(x, y)
     if (roomConnection !== undefined) {
-        left = roomConnection.left !== undefined ? roomConnection.left as number : left
-        right = roomConnection.right !== undefined ? roomConnection.right as number : right
-        top = roomConnection.top !== undefined ? roomConnection.top as number : top
-        bottom = roomConnection.bottom !== undefined ? roomConnection.bottom as number : bottom
+        left = numOrDefault(roomConnection.left, left)
+        right = numOrDefault(roomConnection.right, right)
+        top = numOrDefault(roomConnection.top, top)
+        bottom = numOrDefault(roomConnection.bottom, bottom)
     }
     return $multi(left, top, right, bottom)
 }

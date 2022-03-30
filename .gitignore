@@ -2,6 +2,3 @@
 /main.lua
 /node_modules
 /spel2_declarations.d.ts
-Common.lua
-RoomConnection.lua
-RoomConnections.lua
