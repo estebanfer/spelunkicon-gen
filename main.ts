@@ -1,4 +1,6 @@
 //TODO: theme specific tiles, fix ice caves
+import {randInt} from "./Common"
+import { RoomConnections } from "./RoomConnections"
 
 type ExtraConditionCallback = (tx: number, ty: number, tiles: number[][]) => any
 
@@ -6,13 +8,6 @@ interface ExtraTile {
     tileCode: String
     chance: number
     extraCondition?: ExtraConditionCallback
-}
-
-interface RoomConnection {
-    left?: number
-    top?: number
-    right?: number
-    bottom?: number
 }
 
 function isLavaLevel(): boolean {
@@ -25,7 +20,7 @@ function isWaterLevel(): boolean {
     return state.theme == THEME.TIDE_POOL || state.theme == THEME.SUNKEN_CITY || co_subtheme == COSUBTHEME.TIDE_POOL || co_subtheme == COSUBTHEME.SUNKEN_CITY
 }
 
-enum DIR{
+enum DIR {
     LEFT = 0,
     UP = 1,
     RIGHT = 2,
@@ -130,139 +125,49 @@ class RoomGrid {
     }
 }
 
-function randInt(min: number, max:number) {
-    return prng.random_int(min, max, PRNG_CLASS.EXTRA_SPAWNS) as number
-}
+let roomConnections: RoomConnections = new RoomConnections()
 
-let roomConnections: RoomConnection[][] = []
-
-function setHorizontalConnections(room: RoomConnection, leftRoom?: RoomConnection, rightRoom?: RoomConnection) {
-    if (leftRoom !== undefined) {
-        room.left = leftRoom.right !== undefined ? leftRoom.right : randInt(1, 6)
-        room.right = room.left
-    } else if (rightRoom !== undefined) {
-        room.right = rightRoom.left !== undefined ? rightRoom.left : randInt(1, 6)
-        room.left = room.right
-    } else {
-        room.left = randInt(1, 6)
-        room.right = room.left
-    }
-}
-
-function setVerticalConnections(room: RoomConnection, topRoom?: RoomConnection, bottomRoom?: RoomConnection) {
-    if (topRoom !== undefined) {
-        room.top = topRoom.bottom !== undefined ? topRoom.bottom : randInt(1, 4)
-    } else {
-        room.top = randInt(1, 4)
-    }
-    if (bottomRoom !== undefined) {
-        room.bottom = bottomRoom.top !== undefined ? bottomRoom.top : randInt(1, 4)
-    } else {
-        room.bottom = randInt(1, 4)
-    }
-}
-
-function getRoomConnection(x: number, y: number): RoomConnection | undefined {
-    return roomConnections[y] !== undefined ? roomConnections[y][x] : undefined
-}
-
-function setAllRoomConnections(x: number, y: number): RoomConnection {
-    roomConnections[y][x] = {}
-    let roomConnection = roomConnections[y][x]
-    let leftRoom = getRoomConnection(x-1, y)
-    let rightRoom = getRoomConnection(x+1, y)
-    let topRoom = getRoomConnection(x, y-1)
-    let bottomRoom = getRoomConnection(x, y+1)
-    setHorizontalConnections(roomConnection, leftRoom, rightRoom)
-    setVerticalConnections(roomConnection, topRoom, bottomRoom)
-    return roomConnection
-}
-
-function setHorizontalConnectionsPos(x: number, y: number): RoomConnection {
-    roomConnections[y][x] = {}
-    let roomConnection = roomConnections[y][x]
-    let leftRoom = getRoomConnection(x-1, y)
-    let rightRoom = getRoomConnection(x+1, y)
-    setHorizontalConnections(roomConnection, leftRoom, rightRoom)
-    return roomConnection
-}
-
-function setPathDropConnection(x: number, y: number): void {
-    roomConnections[y][x] = {}
-    let roomConnection = roomConnections[y][x]
-    let leftRoom = getRoomConnection(x-1, y)
-    let rightRoom = getRoomConnection(x+1, y)
-    setHorizontalConnections(roomConnection, leftRoom, rightRoom)
-    setVerticalConnections(roomConnection)
-}
-
-function setPathNotopConnection(x: number, y: number): void {
-    roomConnections[y][x] = {}
-    let roomConnection = roomConnections[y][x]
-    let leftRoom = getRoomConnection(x-1, y)
-    let rightRoom = getRoomConnection(x+1, y)
-    let topRoom = getRoomConnection(x, y-1)
-    setHorizontalConnections(roomConnection, leftRoom, rightRoom)
-    setVerticalConnections(roomConnection, topRoom)
-}
-
-let lastRoomX
-let lastRoomY
 let num = 0
 
 let ignoreRooms: [number, number][] = []
 set_callback((ctx: PostRoomGenerationContext) => {
     num = 0
-    lastRoomX = -1
-    lastRoomY = -1
-    roomConnections = []
+    roomConnections = new RoomConnections(state.height)
     ignoreRooms = []
-    for (let y = 0; y<state.height; y++) {
-        roomConnections[y] = []
-    }
     for (let y = 0; y<state.height; y++) {
         for (let x = 0; x<state.width; x++) {
             let roomTemplate = get_room_template(x, y, LAYER.FRONT)
-            if (roomTemplate !== undefined && !roomConnections[y][x]) {
+            if (roomTemplate !== undefined && !roomConnections.rooms[y][x]) {
                 if (roomTemplate == ROOM_TEMPLATE.PATH_NORMAL) {
-                    setHorizontalConnectionsPos(x, y)
+                    roomConnections.setHorizontalConnection(x, y)
                 } else if (roomTemplate == ROOM_TEMPLATE.PATH_DROP) {
-                    setPathDropConnection(x, y)
+                    roomConnections.setPathDropConnection(x, y)
                 } else if (roomTemplate == ROOM_TEMPLATE.PATH_NOTOP) {
-                    setPathNotopConnection(x, y)
+                    roomConnections.setPathNotopConnection(x, y)
                 } else if (roomTemplate == ROOM_TEMPLATE.PATH_DROP_NOTOP)  {
-                    setAllRoomConnections(x, y)
+                    roomConnections.setAllRoomConnections(x, y)
                 } else if (roomTemplate == ROOM_TEMPLATE.MACHINE_WIDEROOM_PATH) {
-                    roomConnections[y][x] = {}
-                    let roomConnection = roomConnections[y][x]
-                    let leftRoom = getRoomConnection(x-1, y)
-                    setHorizontalConnections(roomConnection, leftRoom, undefined)
-
-                    roomConnections[y][x+1] = {}
-                    let roomConnectionRight = roomConnections[y][x+1]
-                    let rightRoom = getRoomConnection(x+2, y)
-                    setHorizontalConnections(roomConnectionRight, roomConnection, rightRoom)
+                    roomConnections.setWideRoomConnection(x, y)
                 } else if (roomTemplate == ROOM_TEMPLATE.MACHINE_TALLROOM_PATH || roomTemplate == ROOM_TEMPLATE.MACHINE_TALLROOM_SIDE) {
                     let topTemplate = get_room_template(x, y-1, LAYER.FRONT)
                     if (topTemplate == ROOM_TEMPLATE.PATH_DROP || topTemplate == ROOM_TEMPLATE.PATH_DROP_NOTOP)
                         ctx.set_room_template(x, y, LAYER.FRONT, ROOM_TEMPLATE.PATH_DROP_NOTOP)
                     else
                         ctx.set_room_template(x, y, LAYER.FRONT, ROOM_TEMPLATE.PATH_DROP)
-                    setAllRoomConnections(x, y)
+                    roomConnections.setAllRoomConnections(x, y)
                     
                     let bottomTemplate = get_room_template(x, y+2, LAYER.FRONT)
                     if (bottomTemplate == ROOM_TEMPLATE.PATH_NOTOP || bottomTemplate == ROOM_TEMPLATE.PATH_DROP_NOTOP)
                         ctx.set_room_template(x, y+1, LAYER.FRONT, ROOM_TEMPLATE.PATH_DROP_NOTOP)
                     else
                         ctx.set_room_template(x, y+1, LAYER.FRONT, ROOM_TEMPLATE.PATH_NOTOP)
-                    setAllRoomConnections(x, y+1)
+                    roomConnections.setAllRoomConnections(x, y+1)
                     messpect("tall", x, y)
                 } else if (roomTemplate == ROOM_TEMPLATE.MACHINE_BIGROOM_PATH) {
-                    //TODO: Make rooms at right top and right bottom to have correct connections (if they don't have it correct already)
-                    let leftTopRoom = setAllRoomConnections(x, y)
-                    let leftBottomRoom = setAllRoomConnections(x, y+1)
-                    let rightTopRoom = setHorizontalConnectionsPos(x+1, y)
-                    let rightBottomRoom = setHorizontalConnectionsPos(x+1, y+1)
+                    let leftTopRoom = roomConnections.setAllRoomConnections(x, y)
+                    let leftBottomRoom = roomConnections.setAllRoomConnections(x, y+1)
+                    let rightTopRoom = roomConnections.setHorizontalConnection(x+1, y)
+                    let rightBottomRoom = roomConnections.setHorizontalConnection(x+1, y+1)
                     rightTopRoom.top = 9 - (leftTopRoom.top as number)
                     rightBottomRoom.bottom = 9 - (leftBottomRoom.bottom as number)
                 }
@@ -321,7 +226,7 @@ function getRoom(roomTemplate: number, floorChance: number): String {
 }
 
 function getRoomConectionSides(x: number, y: number, left: number, top: number, right: number, bottom: number): LuaMultiReturn<[number, number, number, number]> {
-    const roomConnection = getRoomConnection(x, y)
+    const roomConnection = roomConnections.getRoomConnection(x, y)
     if (roomConnection !== undefined) {
         left = roomConnection.left !== undefined ? roomConnection.left as number : left
         right = roomConnection.right !== undefined ? roomConnection.right as number : right
