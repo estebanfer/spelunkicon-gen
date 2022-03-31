@@ -18,6 +18,13 @@ export class RoomGrid {
             }
         }
     }
+    foreach(func: (x: number, y: number, roomGrid: RoomGrid) => void) {
+        for (let y = 0; y<this.sy; y++) {
+            for (let x = 0; x<this.sx; x++) {
+                func(x, y, this)
+            }
+        }
+    }
     placeTile(x: number, y: number, tile: string): void {
         this.grid[y][x] = tile
     }
@@ -59,7 +66,7 @@ export class RoomGrid {
             this.placeTile(pos[0], pos[1], "0")
         }
     }
-    getGridString(): String {
+    getGridString(): string {
         let retStr = ""
         for (let y = 0; y<this.sy; y++) {
             for (let x = 0; x<this.sx; x++) {

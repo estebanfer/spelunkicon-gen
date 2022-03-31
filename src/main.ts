@@ -3,14 +3,6 @@ import { randInt, numOrDefault, DIR } from "./common"
 import { RoomConnections } from "./roomConnection/roomConnections"
 import { RoomGrid } from "./roomGrid"
 
-type ExtraConditionCallback = (tx: number, ty: number, tiles: number[][]) => any
-
-interface ExtraTile {
-    tileCode: String
-    chance: number
-    extraCondition?: ExtraConditionCallback
-}
-
 function isLavaLevel(): boolean {
     let co_subtheme = get_co_subtheme()
     return state.theme == THEME.VOLCANA || state.theme == THEME.NEO_BABYLON || co_subtheme == COSUBTHEME.VOLCANA || co_subtheme == COSUBTHEME.NEO_BABYLON
@@ -73,9 +65,9 @@ set_callback((ctx: PostRoomGenerationContext) => {
 }, ON.POST_ROOM_GENERATION)
 
 //Old
-function getRoom(roomTemplate: number, floorChance: number): String {
+function getRoom(roomTemplate: number, floorChance: number): string {
     let room: RoomGrid
-    let roomStr: String = ""
+    let roomStr: string = ""
     switch (roomTemplate) {
         case ROOM_TEMPLATE.PATH_NORMAL:
             room = new RoomGrid(10, 6)
@@ -132,9 +124,9 @@ function getRoomConectionSides(x: number, y: number, left: number, top: number, 
     return $multi(left, top, right, bottom)
 }
 
-function getRoomSymmetric(pos: [number, number], roomTemplate: number, floorChance: number): String {
+function getRoomSymmetric(pos: [number, number], roomTemplate: number, floorChance: number): string {
     let room: RoomGrid
-    let roomStr: String = ""
+    let roomStr: string = ""
     let [x, y] = pos
     if (roomTemplate == ROOM_TEMPLATE.PATH_NORMAL) {
         room = new RoomGrid(5, 6)
