@@ -1,5 +1,5 @@
 //TODO: theme specific tiles, fix ice caves
-import { randInt, numOrDefault, DIR, DIRECTION,  } from "./common"
+import { randInt, numOrDefault, DIR } from "./common"
 import { RoomConnections } from "./roomConnection/roomConnections"
 import { RoomGrid } from "./roomGrid"
 
