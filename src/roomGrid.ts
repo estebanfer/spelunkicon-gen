@@ -25,6 +25,10 @@ export class RoomGrid {
             }
         }
     }
+    hasNeighbor(x: number, y: number, tile: string) {
+        return this.getTile(x+1, y) == tile || this.getTile(x-1, y) == tile
+        || this.getTile(x, y+1) == tile || this.getTile(x, y-1) == tile
+    }
     placeTile(x: number, y: number, tile: string): void {
         this.grid[y][x] = tile
     }
