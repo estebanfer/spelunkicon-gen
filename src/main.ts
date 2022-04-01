@@ -2,6 +2,7 @@
 import { randInt, numOrDefault, DIR } from "./common"
 import { RoomConnections } from "./roomConnection/roomConnections"
 import { RoomGrid } from "./roomGrid"
+import { themes } from "./themes"
 
 function isLavaLevel(): boolean {
     let co_subtheme = get_co_subtheme()
@@ -37,18 +38,10 @@ set_callback((ctx: PostRoomGenerationContext) => {
                 } else if (roomTemplate == ROOM_TEMPLATE.MACHINE_WIDEROOM_PATH) {
                     roomConnections.setWideRoomConnection(x, y)
                 } else if (roomTemplate == ROOM_TEMPLATE.MACHINE_TALLROOM_PATH || roomTemplate == ROOM_TEMPLATE.MACHINE_TALLROOM_SIDE) {
-                    let topTemplate = get_room_template(x, y-1, LAYER.FRONT)
-                    if (topTemplate == ROOM_TEMPLATE.PATH_DROP || topTemplate == ROOM_TEMPLATE.PATH_DROP_NOTOP)
-                        ctx.set_room_template(x, y, LAYER.FRONT, ROOM_TEMPLATE.PATH_DROP_NOTOP)
-                    else
-                        ctx.set_room_template(x, y, LAYER.FRONT, ROOM_TEMPLATE.PATH_DROP)
+                    ctx.set_room_template(x, y, LAYER.FRONT, ROOM_TEMPLATE.PATH_DROP_NOTOP)
                     roomConnections.setAllRoomConnections(x, y)
                     
-                    let bottomTemplate = get_room_template(x, y+2, LAYER.FRONT)
-                    if (bottomTemplate == ROOM_TEMPLATE.PATH_NOTOP || bottomTemplate == ROOM_TEMPLATE.PATH_DROP_NOTOP)
-                        ctx.set_room_template(x, y+1, LAYER.FRONT, ROOM_TEMPLATE.PATH_DROP_NOTOP)
-                    else
-                        ctx.set_room_template(x, y+1, LAYER.FRONT, ROOM_TEMPLATE.PATH_NOTOP)
+                    ctx.set_room_template(x, y+1, LAYER.FRONT, ROOM_TEMPLATE.PATH_DROP_NOTOP)
                     roomConnections.setAllRoomConnections(x, y+1)
                     messpect("tall", x, y)
                 } else if (roomTemplate == ROOM_TEMPLATE.MACHINE_BIGROOM_PATH) {
@@ -125,7 +118,7 @@ function getRoomConectionSides(x: number, y: number, left: number, top: number, 
 }
 
 function getRoomSymmetric(pos: [number, number], roomTemplate: number, floorChance: number): string {
-    let room: RoomGrid
+    let room: RoomGrid | undefined
     let roomStr: string = ""
     let [x, y] = pos
     if (roomTemplate == ROOM_TEMPLATE.PATH_NORMAL) {
@@ -133,7 +126,8 @@ function getRoomSymmetric(pos: [number, number], roomTemplate: number, floorChan
         room.setRandomGrid(floorChance)
         const [left, , right, ] = getRoomConectionSides(x, y, 5, 0, 5, 0)
         room.setRandomPath([0,left-1], [4,randInt(0,5)], DIR.LEFT)
-        roomStr = "1111111111\n" + room.getMirrorGrid().getGridString() + "\n1111111111"
+        room.expandVertical(true, true, "X")
+        room = room.getMirrorGrid()
         //messpect(roomStr)
     } else if (roomTemplate == ROOM_TEMPLATE.PATH_DROP) {
         room = new RoomGrid(5, 7)
@@ -141,32 +135,35 @@ function getRoomSymmetric(pos: [number, number], roomTemplate: number, floorChan
         const [left, , , bottom] = getRoomConectionSides(x, y, 5, 0, 0, 4)
         room.setRandomPath([0,left-1], [bottom,6], DIR.LEFT)
         room.setRandomPath([0,left-1], [4,randInt(0,5)], DIR.LEFT)
-        roomStr = "1111111111\n" + room.getMirrorGrid().getGridString()
+        room.expandVertical(true, false, "X")
+        room = room.getMirrorGrid()
     } else if (roomTemplate == ROOM_TEMPLATE.PATH_NOTOP) {
         room = new RoomGrid(5, 7)
         room.setRandomGrid(floorChance)
         const [left, top, , ] = getRoomConectionSides(x, y, 5, 0, 0, 4)
         room.setRandomPath([0,left], [top,0], DIR.LEFT)
         room.setRandomPath([0,left], [4,randInt(0,5)], DIR.LEFT)
-        roomStr = room.getMirrorGrid().getGridString() + "\n1111111111"
+        room.expandVertical(false, true, "X")
+        room = room.getMirrorGrid()
     } else if (roomTemplate == ROOM_TEMPLATE.PATH_DROP_NOTOP) {
         room = new RoomGrid(5, 8)
         room.setRandomGrid(floorChance)
         const [left, top, right, bottom] = getRoomConectionSides(x, y, 5, 0, 0, 4)
         room.setRandomPath([0,left], [4,right], DIR.LEFT)
         room.setRandomPath([top,0], [bottom,7], DIR.UP)
-        roomStr = room.getMirrorGrid().getGridString()
+        room = room.getMirrorGrid()
     } else if (roomTemplate == ROOM_TEMPLATE.MACHINE_WIDEROOM_PATH || roomTemplate == ROOM_TEMPLATE.MACHINE_WIDEROOM_SIDE) {
         room = new RoomGrid(10, 6)
         room.setRandomGrid(floorChance)
         const [left, , right, ] = getRoomConectionSides(x, y, 5, 0, 5, 0)
         room.setRandomPath([0,left-1], [9,randInt(0,5)], DIR.LEFT)
-        roomStr = "11111111111111111111\n" + room.getMirrorGrid().getGridString() + "\n11111111111111111111"
-        messpect("wideroom", roomStr)
+        room.expandVertical(true, true, "X")
+        room = room.getMirrorGrid()
+        messpect("wideroom", room.getGridString())
     } else if (roomTemplate == ROOM_TEMPLATE.SIDE) {
         room = new RoomGrid(5, 8)
         room.setRandomGrid(floorChance)
-        roomStr = room.getMirrorGrid().getGridString()
+        room = room.getMirrorGrid()
     } else if (roomTemplate == ROOM_TEMPLATE.MACHINE_BIGROOM_PATH) {
         room = new RoomGrid(10, 16)
         room.setRandomGrid(floorChance)
@@ -175,8 +172,8 @@ function getRoomSymmetric(pos: [number, number], roomTemplate: number, floorChan
         room.setRandomPath([0,leftTop], [9,randInt(0,7)], DIR.LEFT)
         room.setRandomPath([0,leftBottom+8], [9,randInt(8,15)], DIR.LEFT)
         room.setRandomPath([topLeft,0], [bottomLeft,15], DIR.LEFT, randInt(10, 25))
-        roomStr = room.getMirrorGrid().getGridString()
-        messpect("bigroom", roomStr)
+        room = room.getMirrorGrid()
+        messpect("bigroom", room.getGridString())
     }
     /*if (isLavaLevel() || isWaterLevel()) {
         for (let y = 0; y < room.grid.length; y++) {
@@ -186,12 +183,17 @@ function getRoomSymmetric(pos: [number, number], roomTemplate: number, floorChan
             }
         }
     }*/
+    if (room !== undefined) {
+        if (themes[state.theme] !== undefined)
+            themes[state.theme].processTiles(room)
+        roomStr = room.getGridString()
+    }
     return roomStr
 }
 
 function shouldNotBeReplaced(x: number, y: number, l: number, room_template: number): boolean {
     if (l != LAYER.FRONT) return true
-    if (state.theme == THEME.OLMEC || state.theme == THEME.TIAMAT || state.theme == THEME.BASE_CAMP) return true
+    if (state.theme == THEME.OLMEC || state.theme == THEME.TIAMAT || state.theme == THEME.BASE_CAMP || state.theme == THEME.HUNDUN) return true
     return false
 }
 

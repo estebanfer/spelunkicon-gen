@@ -33,12 +33,12 @@ export class RoomGrid {
         this.grid[y][x] = tile
     }
     getTile(x: number, y: number): string {
-        return this.grid[y][x]
+        return this.grid[y] ? this.grid[y][x] : "-1"
     }
     setRandomGrid(floorChance: number): void {
         for (let y = 0; y<this.sy; y++) {
             for (let x = 0; x<this.sx; x++) {
-                this.grid[y][x] = Math.random()*100 < floorChance ? "1" : "0" //prng.random_int(0, 1, PRNG_CLASS.EXTRA_SPAWNS) as number
+                this.grid[y][x] = Math.random()*100 < floorChance ? "X" : "0" //prng.random_int(0, 1, PRNG_CLASS.EXTRA_SPAWNS) as number
             }
         }
     }
@@ -68,6 +68,27 @@ export class RoomGrid {
         while (pos[1] != endPos[1]) {
             pos[1] < endPos[1] ? pos[1]++ : pos[1]--
             this.placeTile(pos[0], pos[1], "0")
+        }
+    }
+    expandVertical(top: boolean, bottom: boolean, tile: string) {
+        if (top) {
+            //move lines
+            for (let y = this.sy; y > 0; y--) {
+                this.grid[y] = this.grid[y-1];
+            }
+            //add new line
+            this.grid[0] = []
+            for (let x = 0; x < this.sx; x++) {
+                this.grid[0][x] = tile
+            }
+            this.sy++
+        }
+        if (bottom) {
+            this.grid[this.sy] = []
+            for (let x = 0; x < this.sx; x++) {
+                this.grid[this.sy][x] = tile
+            }
+            this.sy++
         }
     }
     getGridString(): string {
