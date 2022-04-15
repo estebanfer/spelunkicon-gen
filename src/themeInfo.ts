@@ -2,11 +2,13 @@ import { randInt, rand } from "./common"
 import { RoomGrid } from "./roomGrid"
 
 type ProceduralTilecodeCallback = (tx: number, ty: number, roomGrid: RoomGrid) => boolean
+type PlaceTilecodeCallback = (tilecode: string, tx: number, ty: number, roomGrid: RoomGrid) => void
 
-interface ProceduralTilecode {
+export interface ProceduralTilecode {
     tileCode: string
     chance: number
     condition: ProceduralTilecodeCallback
+    placeTilecode: PlaceTilecodeCallback
 }
 export class ThemeInfo {
     proceduralTiles: ProceduralTilecode[]
@@ -20,7 +22,7 @@ export class ThemeInfo {
     spawnProceduralsOn(x: number, y: number, roomGrid: RoomGrid) {
         for (const proceduralTile of this.proceduralTiles) {
             if (randInt(0, 100) < proceduralTile.chance && proceduralTile.condition(x, y, roomGrid)) {
-                roomGrid.placeTile(x, y, proceduralTile.tileCode)
+                proceduralTile.placeTilecode(proceduralTile.tileCode, x, y, roomGrid)
                 break
             }
         }
