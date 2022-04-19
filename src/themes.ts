@@ -1,6 +1,11 @@
-import { randInt, rand } from "./common"
+import { rand } from "./common"
 import { ThemeInfo, ProceduralTilecode } from "./themeInfo"
 import { RoomGrid } from "./roomGrid"
+
+function bigTilecodeCondition(x: number, y: number, roomGrid: RoomGrid): boolean {
+    return roomGrid.getTile(x, y) == "0" && roomGrid.getTile(x+1, y) == "0"
+    && roomGrid.getTile(x, y+1) == "0" && roomGrid.getTile(x+1, y+1) == "0"
+}
 
 function defaultPlaceTilecode(tilecode: string, x: number, y: number, roomGrid: RoomGrid) {
     roomGrid.placeTile(x, y, tilecode)
@@ -118,9 +123,54 @@ export const themes: {[key: number]: ThemeInfo} = {
             placeTilecode: defaultPlaceTilecode
         }
     ], "1", "="),
-    [THEME.TEMPLE]: new ThemeInfo([], "=", "1"),
-    [THEME.DUAT]: new ThemeInfo([], "=", "="),
-    [THEME.ICE_CAVES]: new ThemeInfo([], "1", "c"),
+    [THEME.TEMPLE]: new ThemeInfo([
+        {
+            tileCode: "B",
+            chance: 10,
+            condition: bigTilecodeCondition,
+            placeTilecode: defaultPlaceTilecode
+        },
+        {
+            tileCode: "M",
+            chance: 8,
+            condition: (x, y, roomGrid) => {
+                return bigTilecodeCondition(x, y, roomGrid)
+                && defSolids.includes(roomGrid.getTile(x, y+2)) && defSolids.includes(roomGrid.getTile(x+1, y+2))
+            },
+            placeTilecode: defaultPlaceTilecode
+        }
+    ], "=", "1"),
+    [THEME.DUAT]: new ThemeInfo([
+        {
+            tileCode: "H",
+            chance: 10,
+            condition: (x, y, roomGrid) => {
+                return roomGrid.getTile(x, y) == "=" && roomGrid.getTile(x, y+1) == "0"
+            },
+            placeTilecode: defaultPlaceTilecode
+        },
+        {
+            tileCode: "a",
+            chance: 10,
+            condition: (x, y, roomGrid) => {
+                return roomGrid.getTile(x, y) == "0" && roomGrid.getTile(x+1, y) == "0"
+                && roomGrid.getTile(x, y+1) == "=" && roomGrid.getTile(x+1, y+1) == "="
+            },
+            placeTilecode: defaultPlaceTilecode
+        }
+    ], "=", "="),
+    [THEME.ICE_CAVES]: new ThemeInfo([
+        genericSpikes,
+        fallingPlatform,
+        {
+            tileCode: "v",
+            chance: 10,
+            condition: (x, y, roomGrid) => {
+                return roomGrid.getTile(x, y) == "0" && roomGrid.getTile(x, y-1) == "1"
+            },
+            placeTilecode: defaultPlaceTilecode
+        }
+    ], "1", "c"),
     [THEME.NEO_BABYLON]: new ThemeInfo([], "=", "1"),
     [THEME.SUNKEN_CITY]: new ThemeInfo([], "1", "="),
     [THEME.CITY_OF_GOLD]: new ThemeInfo([], "=", "1"),
